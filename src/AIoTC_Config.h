@@ -52,6 +52,8 @@
  * AUTOMATICALLY CONFIGURED DEFINES
  ******************************************************************************/
 
+#if !defined(USE_NOTECARD)
+
 #if defined(ARDUINO_SAMD_MKRWIFI1010) || defined(ARDUINO_SAMD_NANO_33_IOT)
   #define OTA_STORAGE_SNU         (1)
 #else
@@ -132,6 +134,8 @@
 #if defined(BOARD_HAS_SOFTSE) || defined(BOARD_HAS_OFFLOADED_ECCX08) || defined(BOARD_HAS_ECCX08) || defined(BOARD_HAS_SE050)
   #define BOARD_HAS_SECURE_ELEMENT
 #endif
+
+#endif // USE_NOTECARD
 
 /******************************************************************************
  * CONSTANTS
