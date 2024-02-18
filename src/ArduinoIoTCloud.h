@@ -173,7 +173,9 @@ class ArduinoIoTCloudClass
     bool _thing_id_outdated;
 };
 
-#ifdef HAS_TCP
+#if defined (USE_NOTECARD)
+  #include "ArduinoIoTCloudNotecard.h"
+#elif defined(HAS_TCP)
   #include "ArduinoIoTCloudTCP.h"
 #elif defined(HAS_LORA)
   #include "ArduinoIoTCloudLPWAN.h"

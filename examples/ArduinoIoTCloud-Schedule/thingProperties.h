@@ -2,7 +2,7 @@
 #include <Arduino_ConnectionHandler.h>
 #include "arduino_secrets.h"
 
-#if !(defined(BOARD_HAS_WIFI) || defined(BOARD_HAS_GSM) || defined(BOARD_HAS_LORA) || \
+#if !(defined(USE_NOTECARD) || defined(BOARD_HAS_WIFI) || defined(BOARD_HAS_GSM) || defined(BOARD_HAS_LORA) || \
       defined(BOARD_HAS_NB) || defined(BOARD_HAS_ETHERNET) || defined(BOARD_HAS_CATM1_NBIOT))
   #error "Please check Arduino IoT Cloud supported boards list: https://github.com/arduino-libraries/ArduinoIoTCloud/#what"
 #endif
@@ -27,7 +27,7 @@ void initProperties() {
   ArduinoCloud.setBoardId(BOARD_ID);
   ArduinoCloud.setSecretDeviceKey(SECRET_DEVICE_KEY);
 #endif
-#if defined(BOARD_HAS_WIFI) || defined(BOARD_HAS_GSM) || defined(BOARD_HAS_NB) || defined(BOARD_HAS_ETHERNET) || defined(BOARD_HAS_CATM1_NBIOT)
+#if defined(USE_NOTECARD) || defined(BOARD_HAS_WIFI) || defined(BOARD_HAS_GSM) || defined(BOARD_HAS_NB) || defined(BOARD_HAS_ETHERNET) || defined(BOARD_HAS_CATM1_NBIOT)
   ArduinoCloud.addProperty(switchButton, Permission::Write);
   ArduinoCloud.addProperty(oneShot, Permission::ReadWrite);
   ArduinoCloud.addProperty(minute, Permission::ReadWrite);
@@ -41,7 +41,9 @@ void initProperties() {
 #endif
 }
 
-#if defined(BOARD_HAS_WIFI)
+#if defined(USE_NOTECARD)
+  NotecardConnectionHandler ArduinoIoTPreferredConnection(SECRET_NOTECARD_PRODUCT_UID);
+#elif defined(BOARD_HAS_WIFI)
   WiFiConnectionHandler ArduinoIoTPreferredConnection(SECRET_WIFI_SSID, SECRET_WIFI_PASS);
 #elif defined(BOARD_HAS_GSM)
   GSMConnectionHandler ArduinoIoTPreferredConnection(SECRET_PIN, SECRET_APN, SECRET_LOGIN, SECRET_PASS);
