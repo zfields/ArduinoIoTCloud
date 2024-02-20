@@ -62,7 +62,16 @@ int ArduinoIoTCloudNotecard::connected()
 
 int ArduinoIoTCloudNotecard::begin(ConnectionHandler &connection) {
   _connection = &connection;
-  _time_service.begin(nullptr);
+
+  // Configure the interrupt pin
+  if (interrupt_pin >= 0) {
+    ::pinMode(interrupt_pin, INPUT);
+    ::attachInterrupt(digitalPinToInterrupt(interrupt_pin), ISR_dataAvailable, RISING);
+    _interrupt_pin = interrupt_pin;
+  }
+
+  // Begin the Notecard time service
+  _time_service.begin(&connection);
   return 1;
 }
 
