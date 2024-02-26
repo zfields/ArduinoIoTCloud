@@ -31,6 +31,7 @@
  ******************************************************************************/
 
 static size_t const CBOR_NOTE_MSG_MAX_SIZE = 255;
+static size_t const POLL_INTERVAL_MS = 10000;
 
 /******************************************************************************
    LOCAL MODULE FUNCTIONS
@@ -41,12 +42,21 @@ unsigned long getTime()
   return ArduinoCloud.getInternalTime();
 }
 
+void ISR_dataAvailable(void)
+{
+  ArduinoCloud._data_available = true;
+}
+
 /******************************************************************************
    CTOR/DTOR
  ******************************************************************************/
 
 ArduinoIoTCloudNotecard::ArduinoIoTCloudNotecard()
-: _state{State::ConnectPhy}
+:
+  _last_poll_ms{0},
+  _state{State::ConnectPhy},
+  _interrupt_pin{-1},
+  _data_available{false}
 {
 
 }
@@ -60,7 +70,7 @@ int ArduinoIoTCloudNotecard::connected()
   return (_connection->check() == NetworkConnectionState::CONNECTED);
 }
 
-int ArduinoIoTCloudNotecard::begin(ConnectionHandler &connection) {
+int ArduinoIoTCloudNotecard::begin(ConnectionHandler &connection, int interrupt_pin) {
   _connection = &connection;
 
   // Configure the interrupt pin
@@ -125,13 +135,34 @@ ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_Connected()
   updateTimestampOnLocallyChangedProperties(_thing_property_container);
 
   /* Decode available data. */
-  if (_connection->available())
+  if (available())
     decodePropertiesFromCloud();
 
   /* If properties need updating sent them to the cloud. */
   sendPropertiesToCloud();
 
   return State::Connected;
+}
+
+bool ArduinoIoTCloudNotecard::available(void)
+{
+  bool result;
+
+  const bool interrupts_enabled = (_interrupt_pin >= 0);
+  bool check_data = true;
+  if (interrupts_enabled) {
+    check_data = (_data_available || ((::millis() - _last_poll_ms) > POLL_INTERVAL_MS));
+  }
+
+  if (check_data) {
+    result = _connection->available();
+    _data_available = ::digitalRead(_interrupt_pin);
+    _last_poll_ms = ::millis();
+  } else {
+    result = false;
+  }
+
+  return result;
 }
 
 void ArduinoIoTCloudNotecard::decodePropertiesFromCloud()
