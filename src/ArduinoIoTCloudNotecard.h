@@ -39,7 +39,7 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
     virtual int  connected     () override;
     virtual void printDebugInfo() override;
 
-    int begin(ConnectionHandler &connection);
+    int begin(ConnectionHandler &connection, int interrupt_pin = -1);
 
   private:
 
@@ -50,14 +50,20 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
       Connected,
     };
 
+    uint32_t _last_poll_ms;
     State _state;
+    int _interrupt_pin;
+    volatile bool _data_available;
 
     State handle_ConnectPhy();
     State handle_SyncTime();
     State handle_Connected();
 
+    bool available (void);
     void decodePropertiesFromCloud();
     void sendPropertiesToCloud();
+
+    friend void ISR_dataAvailable (void);
 };
 
 /******************************************************************************
