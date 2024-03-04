@@ -175,7 +175,10 @@ void ArduinoIoTCloudNotecard::decodePropertiesFromCloud()
   {
     note_buf[bytes_received] = _connection->read();
   }
-  CBORDecoder::decode(_thing_property_container, note_buf, bytes_received);
+  if (bytes_received > 0) {
+    DEBUG_VERBOSE("Received %d bytes from cloud. Decoding...", bytes_received);
+    CBORDecoder::decode(_thing_property_container, note_buf, bytes_received);
+  }
 }
 
 void ArduinoIoTCloudNotecard::sendPropertiesToCloud()
