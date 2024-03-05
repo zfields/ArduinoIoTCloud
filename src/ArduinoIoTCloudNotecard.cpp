@@ -120,7 +120,7 @@ int ArduinoIoTCloudNotecard::begin(ConnectionHandler &connection, int interrupt_
   addPropertyToContainer(_device_property_container, *p, "LIB_VERSION", Permission::Read);
   p = new CloudWrapperBool(_ota_cap);
   addPropertyToContainer(_device_property_container, *p, "OTA_CAP", Permission::Read);
-  p = new CloudWrapperInt(_ota_error);
+  p = new CloudWrapperInt<int>(_ota_error);
   addPropertyToContainer(_device_property_container, *p, "OTA_ERROR", Permission::Read);
   p = new CloudWrapperString(_ota_img_sha256);
   addPropertyToContainer(_device_property_container, *p, "OTA_SHA256", Permission::Read);
@@ -442,7 +442,11 @@ void ArduinoIoTCloudNotecard::sendDevicePropertiesToCloud(void)
   NotecardConnectionHandler *notecard_connection = reinterpret_cast<NotecardConnectionHandler *>(_connection);
 
   // Iterate over the list of read-only device properties
-  std::list<String> ro_device_property_list {"LIB_VERSION", "OTA_CAP", "OTA_ERROR", "OTA_SHA256"};
+  std::list<String> ro_device_property_list;  // {"LIB_VERSION", "OTA_CAP", "OTA_ERROR", "OTA_SHA256"};
+  ro_device_property_list.push_back("LIB_VERSION");
+  ro_device_property_list.push_back("OTA_CAP");
+  ro_device_property_list.push_back("OTA_ERROR");
+  ro_device_property_list.push_back("OTA_SHA256");
 
   for (
     std::list<String>::iterator it = ro_device_property_list.begin();
