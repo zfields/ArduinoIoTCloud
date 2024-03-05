@@ -28,26 +28,6 @@
   #define NTP_USE_RANDOM_PORT     (1)
 #endif
 
-#ifndef DEBUG_ERROR
-  #define DEBUG_ERROR(fmt, ...) Debug.print(DBG_ERROR, fmt, ## __VA_ARGS__)
-#endif
-
-#ifndef DEBUG_WARNING
-  #define DEBUG_WARNING(fmt, ...) Debug.print(DBG_WARNING, fmt, ## __VA_ARGS__)
-#endif
-
-#ifndef DEBUG_INFO
-  #define DEBUG_INFO(fmt, ...) Debug.print(DBG_INFO, fmt, ## __VA_ARGS__)
-#endif
-
-#ifndef DEBUG_DEBUG
-  #define DEBUG_DEBUG(fmt, ...) Debug.print(DBG_DEBUG, fmt, ## __VA_ARGS__)
-#endif
-
-#ifndef DEBUG_VERBOSE
-  #define DEBUG_VERBOSE(fmt, ...) //Debug.print(DBG_VERBOSE, fmt, ## __VA_ARGS__)
-#endif
-
 /******************************************************************************
  * AUTOMATICALLY CONFIGURED DEFINES
  ******************************************************************************/

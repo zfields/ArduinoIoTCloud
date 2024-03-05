@@ -208,7 +208,7 @@ int ArduinoIoTCloudTCP::begin(bool const enable_watchdog, String brokerAddress, 
 #if OTA_ENABLED
   p = new CloudWrapperBool(_ota_cap);
   addPropertyToContainer(_device_property_container, *p, "OTA_CAP", Permission::Read, -1);
-  p = new CloudWrapperInt(_ota_error);
+  p = new CloudWrapperInt<int>(_ota_error);
   addPropertyToContainer(_device_property_container, *p, "OTA_ERROR", Permission::Read, -1);
   p = new CloudWrapperString(_ota_img_sha256);
   addPropertyToContainer(_device_property_container, *p, "OTA_SHA256", Permission::Read, -1);
@@ -292,7 +292,7 @@ void ArduinoIoTCloudTCP::update()
 #endif /* OTA_ENABLED */
 
   /* This watchdog feed is actually needed only by the RP2040 Connect because its
-   * maximum watchdog window is 8389 ms; despite this we feed it for all 
+   * maximum watchdog window is 8389 ms; despite this we feed it for all
    * supported ARCH to keep code aligned.
    */
 #if defined (ARDUINO_ARCH_SAMD) || defined (ARDUINO_ARCH_MBED)
