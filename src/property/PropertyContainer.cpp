@@ -25,6 +25,8 @@
 
 #include "types/CloudWrapperBase.h"
 
+bool enablePropertyDebug = false;
+
 /******************************************************************************
    INTERNAL FUNCTION DECLARATION
  ******************************************************************************/
@@ -37,29 +39,83 @@ void addProperty(PropertyContainer & prop_cont, Property * property_obj, int pro
 
 Property & addPropertyToContainer(PropertyContainer & prop_cont, Property & property, String const & name, Permission const permission, int propertyIdentifier, GetTimeCallbackFunc func)
 {
+  if (enablePropertyDebug) {
+    Serial.print("|<");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::0x");
+    Serial.print((uint32_t)(&property), HEX);
+    Serial.println(">|");
+  }
+
   /* Check whether or not the property already has been added to the container */
   Property * p = getProperty(prop_cont, name);
-  if(p != nullptr) return (*p);
+  if(p != nullptr) {
+    if (enablePropertyDebug) {
+      Serial.print("|</");
+      Serial.print(__FUNCTION__);
+      Serial.print(" 0x");
+      Serial.print((uint32_t)(&prop_cont), HEX);
+      Serial.print("::0x");
+      Serial.print((uint32_t)(&property), HEX);
+      Serial.println(">|");
+      Serial.println();
+    }
+    return (*p);
+  }
 
   /* Initialize property and add it to the container */
   property.init(name, permission, func);
 
   addProperty(prop_cont, &property, propertyIdentifier);
+
+  if (enablePropertyDebug) {
+    Serial.print("|</");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::0x");
+    Serial.print((uint32_t)(&property), HEX);
+    Serial.println(">|");
+    Serial.println();
+  }
   return property;
 }
 
 
 Property * getProperty(PropertyContainer & prop_cont, String const & name)
 {
+  if (enablePropertyDebug) {
+    Serial.print("|<");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::");
+    Serial.print(name);
+    Serial.println(">|");
+  }
+
   std::list<Property *>::iterator iter;
 
   iter = std::find_if(prop_cont.begin(),
                       prop_cont.end(),
                       [name](Property * p) -> bool
                       {
-                        return (p->name() == name);
+                        bool result = (p->name() == name);
+                        if (result && enablePropertyDebug) { p->dump(); }
+                        return result;
                       });
 
+  if (enablePropertyDebug) {
+    Serial.print("|</");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::");
+    Serial.print(name);
+    Serial.println(">|");
+  }
   if (iter == prop_cont.end())
     return nullptr;
   else
@@ -68,15 +124,36 @@ Property * getProperty(PropertyContainer & prop_cont, String const & name)
 
 Property * getProperty(PropertyContainer & prop_cont, int const identifier)
 {
+  if (enablePropertyDebug) {
+    Serial.print("|<");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::");
+    Serial.print(identifier, DEC);
+    Serial.println(">|");
+  }
+
   std::list<Property *>::iterator iter;
 
   iter = std::find_if(prop_cont.begin(),
                       prop_cont.end(),
                       [identifier](Property * p) -> bool
                       {
-                        return (p->identifier() == identifier);
+                        bool result = (p->identifier() == identifier);
+                        if (result && enablePropertyDebug) { p->dump(); }
+                        return result;
                       });
 
+  if (enablePropertyDebug) {
+    Serial.print("|</");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::");
+    Serial.print(identifier, DEC);
+    Serial.println(">|");
+  }
   if (iter == prop_cont.end())
     return nullptr;
   else
@@ -85,16 +162,44 @@ Property * getProperty(PropertyContainer & prop_cont, int const identifier)
 
 void requestUpdateForAllProperties(PropertyContainer & prop_cont)
 {
+  if (enablePropertyDebug) {
+    Serial.print("|<");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.println(">|");
+  }
+
   std::for_each(prop_cont.begin(),
                 prop_cont.end(),
                 [](Property * p)
                 {
                   p->requestUpdate();
+                  if (enablePropertyDebug) {
+                    p->dump();
+                    Serial.println();
+                  }
                 });
+
+  if (enablePropertyDebug) {
+    Serial.print("|</");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.println(">|");
+  }
 }
 
 void updateTimestampOnLocallyChangedProperties(PropertyContainer & prop_cont)
 {
+  if (enablePropertyDebug) {
+    Serial.print("|<");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.println(">|");
+  }
+
   /* This function updates the timestamps on the primitive properties
    * that have been modified locally since last cloud synchronization
    */
@@ -106,12 +211,34 @@ void updateTimestampOnLocallyChangedProperties(PropertyContainer & prop_cont)
                   if (pbase->isPrimitive() && pbase->isChangedLocally() && pbase->isReadableByCloud())
                   {
                     p->updateLocalTimestamp();
+                    if (enablePropertyDebug) {
+                      p->dump();
+                      Serial.println();
+                    }
                   }
                 });
+
+  if (enablePropertyDebug) {
+    Serial.print("|</");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.println(">|");
+  }
 }
 
 void updateProperty(PropertyContainer & prop_cont, String propertyName, unsigned long cloudChangeEventTime, bool const is_sync_message, std::list<CborMapData> * map_data_list)
 {
+  if (enablePropertyDebug) {
+    Serial.print("|<");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::");
+    Serial.print(propertyName);
+    Serial.println(">|");
+  }
+
   Property * property = getProperty(prop_cont, propertyName);
 
   if (property && property->isWriteableByCloud())
@@ -125,11 +252,39 @@ void updateProperty(PropertyContainer & prop_cont, String propertyName, unsigned
       property->execCallbackOnChange();
       property->provideEcho();
     }
+
+    if (enablePropertyDebug) {
+      Serial.print("|<");
+      Serial.print(__LINE__);
+      Serial.println(">|");
+      property->dump();
+    }
+  }
+
+  if (enablePropertyDebug) {
+    Serial.print("|</");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::");
+    Serial.print(propertyName);
+    Serial.println(">|");
+    Serial.println();
   }
 }
 
 String getPropertyNameByIdentifier(PropertyContainer & prop_cont, int propertyIdentifier)
 {
+  if (enablePropertyDebug) {
+    Serial.print("|<");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::");
+    Serial.print(propertyIdentifier, DEC);
+    Serial.println(">|");
+  }
+
   Property * property = nullptr;
 
   if (propertyIdentifier > 255)
@@ -137,10 +292,29 @@ String getPropertyNameByIdentifier(PropertyContainer & prop_cont, int propertyId
   else
     property = getProperty(prop_cont, propertyIdentifier);
 
-  if (property)
+  if (property) {
+    if (enablePropertyDebug) {
+      Serial.print("|</");
+      Serial.print(__FUNCTION__);
+      Serial.print(" 0x");
+      Serial.print((uint32_t)(&prop_cont), HEX);
+      Serial.print("::");
+      Serial.print(propertyIdentifier, DEC);
+      Serial.println(">|");
+    }
     return property->name();
-  else
-    return String("");
+  }
+
+  if (enablePropertyDebug) {
+    Serial.print("|</");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::");
+    Serial.print(propertyIdentifier, DEC);
+    Serial.println(">|");
+  }
+  return String("");
 }
 
 /******************************************************************************
@@ -149,6 +323,17 @@ String getPropertyNameByIdentifier(PropertyContainer & prop_cont, int propertyId
 
 void addProperty(PropertyContainer & prop_cont, Property * property_obj, int propertyIdentifier)
 {
+  if (enablePropertyDebug) {
+    Serial.print("|<");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::0x");
+    Serial.print((uint32_t)(property_obj), HEX);
+    Serial.println(">|");
+  }
+
+  if (enablePropertyDebug) { property_obj->dump(); }
   if (propertyIdentifier != -1)
   {
     property_obj->setIdentifier(propertyIdentifier);
@@ -159,4 +344,14 @@ void addProperty(PropertyContainer & prop_cont, Property * property_obj, int pro
     property_obj->setIdentifier(prop_cont.size() + 1); /* This is in order to stay compatible to the old system of first increasing _numProperties and then assigning it here. */
   }
   prop_cont.push_back(property_obj);
+
+  if (enablePropertyDebug) {
+    Serial.print("|</");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)(&prop_cont), HEX);
+    Serial.print("::0x");
+    Serial.print((uint32_t)(property_obj), HEX);
+    Serial.println(">|");
+  }
 }

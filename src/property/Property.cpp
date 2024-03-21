@@ -21,6 +21,8 @@
 #undef min
 #include <algorithm>
 
+extern bool enablePropertyDebug;
+
 /******************************************************************************
    CTOR/DTOR
  ******************************************************************************/
@@ -40,6 +42,7 @@ Property::Property()
 , _update_interval_millis{0}
 , _last_local_change_timestamp{0}
 , _last_cloud_change_timestamp{0}
+, _map_data_list(nullptr)
 , _identifier{0}
 , _attributeIdentifier{0}
 , _lightPayload{false}
@@ -182,9 +185,37 @@ CborError Property::append(CborEncoder *encoder, bool lightPayload) {
 }
 
 void Property::setAttributesFromCloud(std::list<CborMapData> * map_data_list) {
+  if (enablePropertyDebug) {
+    Serial.print("|<Property::");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)map_data_list, HEX);
+    Serial.println(">|");
+    if (map_data_list == nullptr) {
+      Serial.print("map_data_list parameter is null.");
+    } else {
+      Serial.println("map_data_list parameter:");
+      for (
+        std::list<CborMapData>::const_iterator it = map_data_list->begin();
+        it != map_data_list->end();
+        ++it
+      ) {
+        if (it != map_data_list->begin()) Serial.println();
+        it->dump();
+      }
+    }
+  }
+
   _map_data_list = map_data_list;
   _attributeIdentifier = 0;
   setAttributesFromCloud();
+  if (enablePropertyDebug) {
+    Serial.print("|</Property::");
+    Serial.print(__FUNCTION__);
+    Serial.print(" 0x");
+    Serial.print((uint32_t)map_data_list, HEX);
+    Serial.println(">|");
+  }
 }
 
 void Property::updateLocalTimestamp() {

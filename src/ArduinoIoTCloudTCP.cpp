@@ -113,6 +113,7 @@ ArduinoIoTCloudTCP::ArduinoIoTCloudTCP()
 
 int ArduinoIoTCloudTCP::begin(ConnectionHandler & connection, bool const enable_watchdog, String brokerAddress, uint16_t brokerPort)
 {
+  enablePropertyDebug = true;
   _connection = &connection;
   _brokerAddress = brokerAddress;
 #ifdef BOARD_HAS_SECRET_KEY
@@ -121,7 +122,9 @@ int ArduinoIoTCloudTCP::begin(ConnectionHandler & connection, bool const enable_
   _brokerPort = brokerPort;
 #endif
   _time_service.begin(&connection);
-  return begin(enable_watchdog, _brokerAddress, _brokerPort);
+  const int result = begin(enable_watchdog, _brokerAddress, _brokerPort);
+  enablePropertyDebug = false;
+  return result;
 }
 
 int ArduinoIoTCloudTCP::begin(bool const enable_watchdog, String brokerAddress, uint16_t brokerPort)
@@ -203,6 +206,7 @@ int ArduinoIoTCloudTCP::begin(bool const enable_watchdog, String brokerAddress, 
   _deviceTopicIn  = getTopic_devicein();
 
   Property* p;
+  enablePropertyDebug = false;
   p = new CloudWrapperString(_lib_version);
   addPropertyToContainer(_device_property_container, *p, "LIB_VERSION", Permission::Read, -1);
 #if OTA_ENABLED
@@ -220,8 +224,13 @@ int ArduinoIoTCloudTCP::begin(bool const enable_watchdog, String brokerAddress, 
   p = new CloudWrapperString(_thing_id);
   addPropertyToContainer(_device_property_container, *p, "thing_id", Permission::ReadWrite, -1).onUpdate(setThingIdOutdated);
 
+  // showDeviceProperties();
+
   addPropertyReal(_tz_offset, "tz_offset", Permission::ReadWrite).onSync(CLOUD_WINS).onUpdate(updateTimezoneInfo);
   addPropertyReal(_tz_dst_until, "tz_dst_until", Permission::ReadWrite).onSync(CLOUD_WINS).onUpdate(updateTimezoneInfo);
+
+  // showThingProperties();
+  enablePropertyDebug = false;
 
 #if OTA_ENABLED
   _ota_cap = OTA::isCapable();
@@ -322,6 +331,8 @@ void ArduinoIoTCloudTCP::printDebugInfo()
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_ConnectPhy()
 {
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
+  enablePropertyDebug = true;
   if (_connection->check() == NetworkConnectionState::CONNECTED)
   {
     bool const is_retry_attempt = (_last_connection_attempt_cnt > 0);
@@ -329,24 +340,32 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_ConnectPhy()
       return State::SyncTime;
   }
 
+  enablePropertyDebug = false;
+  delay(1000); // Wait 1s before retrying
   return State::ConnectPhy;
 }
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_SyncTime()
 {
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
+  enablePropertyDebug = false;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
   unsigned long const internal_posix_time = _time_service.getTime();
 #pragma GCC diagnostic pop
   DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s internal clock configured to posix timestamp %d", __FUNCTION__, internal_posix_time);
+  enablePropertyDebug = false;
   return State::ConnectMqttBroker;
 }
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_ConnectMqttBroker()
 {
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
+  enablePropertyDebug = false;
   if (_mqttClient.connect(_brokerAddress.c_str(), _brokerPort))
   {
     _last_connection_attempt_cnt = 0;
+    enablePropertyDebug = false;
     return State::SendDeviceProperties;
   }
 
@@ -357,30 +376,39 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_ConnectMqttBroker()
 
   DEBUG_ERROR("ArduinoIoTCloudTCP::%s could not connect to %s:%d", __FUNCTION__, _brokerAddress.c_str(), _brokerPort);
   DEBUG_ERROR("ArduinoIoTCloudTCP::%s %d connection attempt at tick time %d", __FUNCTION__, _last_connection_attempt_cnt, _next_connection_attempt_tick);
+  enablePropertyDebug = false;
   return State::ConnectPhy;
 }
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_SendDeviceProperties()
 {
+  enablePropertyDebug = false;
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
   if (!_mqttClient.connected())
   {
+    enablePropertyDebug = false;
     return State::Disconnect;
   }
 
   sendDevicePropertiesToCloud();
+  enablePropertyDebug = false;
   return State::SubscribeDeviceTopic;
 }
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_SubscribeDeviceTopic()
 {
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
+  enablePropertyDebug = true;
   if (!_mqttClient.connected())
   {
+    enablePropertyDebug = false;
     return State::Disconnect;
   }
 
   if (!_mqttClient.subscribe(_deviceTopicIn))
   {
     DEBUG_ERROR("ArduinoIoTCloudTCP::%s could not subscribe to %s", __FUNCTION__, _deviceTopicIn.c_str());
+    enablePropertyDebug = false;
     return State::SubscribeDeviceTopic;
   }
 
@@ -390,6 +418,7 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_SubscribeDeviceTopic()
     _next_device_subscribe_attempt_tick = 0;
     _mqttClient.stop();
     execCloudEventCallback(ArduinoIoTCloudEvent::DISCONNECT);
+    enablePropertyDebug = false;
     return State::ConnectPhy;
   }
 
@@ -399,18 +428,23 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_SubscribeDeviceTopic()
   _next_device_subscribe_attempt_tick = millis() + subscribe_retry_delay;
   _last_device_subscribe_cnt++;
 
+  enablePropertyDebug = false;
   return State::WaitDeviceConfig;
 }
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_WaitDeviceConfig()
 {
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
+  enablePropertyDebug = true;
   if (!_mqttClient.connected())
   {
+    enablePropertyDebug = false;
     return State::Disconnect;
   }
 
   if (getThingIdOutdatedFlag())
   {
+    enablePropertyDebug = false;
     return State::CheckDeviceConfig;
   }
 
@@ -420,16 +454,22 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_WaitDeviceConfig()
     if (_mqttClient.unsubscribe(_deviceTopicIn))
     {
       DEBUG_ERROR("ArduinoIoTCloudTCP::%s device waiting for valid thing_id", __FUNCTION__);
+      enablePropertyDebug = false;
       return State::SubscribeDeviceTopic;
     }
   }
+  delay(1000); // Wait 1s before retrying
+  enablePropertyDebug = false;
   return State::WaitDeviceConfig;
 }
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_CheckDeviceConfig()
 {
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
+  enablePropertyDebug = true;
   if (!_mqttClient.connected())
   {
+    enablePropertyDebug = false;
     return State::Disconnect;
   }
 
@@ -443,6 +483,9 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_CheckDeviceConfig()
     execCloudEventCallback(ArduinoIoTCloudEvent::DISCONNECT);
   }
 
+  // showDeviceProperties();
+  // showThingProperties();
+
   updateThingTopics();
 
   if (deviceNotAttached())
@@ -452,17 +495,20 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_CheckDeviceConfig()
     attach_retry_delay = min(attach_retry_delay, static_cast<unsigned long>(AIOT_CONFIG_MAX_DEVICE_TOPIC_ATTACH_RETRY_DELAY_ms));
     _next_device_subscribe_attempt_tick = millis() + attach_retry_delay;
     _last_device_attach_cnt++;
+    enablePropertyDebug = false;
     return State::WaitDeviceConfig;
   }
 
   DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s Device attached to a new valid Thing %s", __FUNCTION__, getThingId().c_str());
   _last_device_attach_cnt = 0;
 
+  enablePropertyDebug = false;
   return State::SubscribeThingTopics;
 }
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_SubscribeThingTopics()
 {
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
   if (!_mqttClient.connected())
   {
     return State::Disconnect;
@@ -519,6 +565,7 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_SubscribeThingTopics()
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_RequestLastValues()
 {
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
   if (!_mqttClient.connected())
   {
     return State::Disconnect;
@@ -558,6 +605,7 @@ ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_RequestLastValues()
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_Connected()
 {
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
   if (!_mqttClient.connected())
   {
     /* The last message was definitely lost, trigger a retransmit. */
@@ -636,6 +684,7 @@ void ArduinoIoTCloudTCP::handle_OTARequest() {
 
 ArduinoIoTCloudTCP::State ArduinoIoTCloudTCP::handle_Disconnect()
 {
+  DEBUG_VERBOSE("ArduinoIoTCloudTCP::%s", __FUNCTION__);
   DEBUG_ERROR("ArduinoIoTCloudTCP::%s MQTT client connection lost", __FUNCTION__);
   _mqttClient.stop();
   execCloudEventCallback(ArduinoIoTCloudEvent::DISCONNECT);

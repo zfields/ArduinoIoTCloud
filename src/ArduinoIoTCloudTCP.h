@@ -217,6 +217,38 @@ class ArduinoIoTCloudTCP: public ArduinoIoTCloudClass
     void sendDevicePropertyToCloud(String const name);
 #endif
 
+    void showDeviceProperties(void) {
+      Serial.println();
+      Serial.print("ArduinoIoTCloud::_device_property_container: 0x");
+      Serial.println(*reinterpret_cast<uint32_t *>(&_device_property_container), HEX);
+      for (
+        PropertyContainer::const_iterator it = _device_property_container.begin();
+        it != _device_property_container.end();
+        ++it
+      ) {
+        if (it != _device_property_container.begin()) Serial.println();
+        Serial.print("0x");
+        Serial.println(*reinterpret_cast<const uint32_t *>(&(*it)), HEX);
+        (*it)->dump();
+      }
+    }
+
+    void showThingProperties(void) {
+      Serial.println();
+      Serial.print("ArduinoIoTCloud::_thing_property_container: 0x");
+      Serial.println(*reinterpret_cast<uint32_t *>(&_thing_property_container), HEX);
+      for (
+        PropertyContainer::const_iterator it = _thing_property_container.begin();
+        it != _thing_property_container.end();
+        ++it
+      ) {
+        if (it != _thing_property_container.begin()) Serial.println();
+        Serial.print("0x");
+        Serial.println(*reinterpret_cast<const uint32_t *>(&(*it)), HEX);
+        (*it)->dump();
+      }
+    }
+
     void updateThingTopics();
 };
 

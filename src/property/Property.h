@@ -97,6 +97,22 @@ class MapEntry {
 class CborMapData {
 
   public:
+    void dump (void) const {
+      if (base_version.isSet()) { Serial.print("Base version: "); Serial.println(base_version.get()); }
+      if (base_name.isSet()) { Serial.print("Base name: "); Serial.println(base_name.get()); }
+      if (base_time.isSet()) { Serial.print("Base time: "); Serial.println(base_time.get()); }
+      if (name.isSet()) { Serial.print("Name: "); Serial.println(name.get()); }
+      if (name_identifier.isSet()) { Serial.print("Name identifier: "); Serial.println(name_identifier.get() ? "true" : "false"); }
+      if (light_payload.isSet()) { Serial.print("Light payload: "); Serial.println(light_payload.get()); }
+      if (attribute_name.isSet()) { Serial.print("Attribute name: "); Serial.println(attribute_name.get()); }
+      if (attribute_identifier.isSet()) { Serial.print("Attribute identifier: "); Serial.println(attribute_identifier.get()); }
+      if (property_identifier.isSet()) { Serial.print("Property identifier: "); Serial.println(property_identifier.get()); }
+      if (val.isSet()) { Serial.print("Value: "); Serial.println(val.get()); }
+      if (str_val.isSet()) { Serial.print("String value: "); Serial.println(str_val.get()); }
+      if (bool_val.isSet()) { Serial.print("Boolean value: "); Serial.println(bool_val.get() ? "true" : "false"); }
+      if (time.isSet()) { Serial.print("Time: "); Serial.println(time.get()); }
+    }
+
     MapEntry<int>    base_version;
     MapEntry<String> base_name;
     MapEntry<double> base_time;
@@ -255,6 +271,38 @@ class Property
       setAttribute<T>(attributeName, setValueAttribute<T>, value);
     }
     void setAttributesFromCloud(std::list<CborMapData> * map_data_list);
+
+    void dump() const {
+      Serial.print("Name: "); Serial.println(_name);
+      Serial.print("Min Delta Property: "); Serial.println(_min_delta_property);
+      Serial.print("Min Time Between Updates Millis: "); Serial.println(_min_time_between_updates_millis);
+      Serial.print("Get Time Func: "); Serial.println(_get_time_func ? "Set" : "Not Set");
+      Serial.print("Update Callback Func: "); Serial.println(_update_callback_func ? "Set" : "Not Set");
+      Serial.print("On Sync Callback Func: "); Serial.println(_on_sync_callback_func ? "Set" : "Not Set");
+      Serial.print("Permission: "); Serial.println(_permission == Permission::Read ? "Read" : _permission == Permission::Write ? "Write" : "ReadWrite");
+      Serial.print("Update Policy: "); Serial.println(_update_policy == UpdatePolicy::OnChange ? "OnChange" : _update_policy == UpdatePolicy::TimeInterval ? "TimeInterval" : "OnDemand");
+      Serial.print("Has Been Updated Once: "); Serial.println(_has_been_updated_once ? "true" : "false");
+      Serial.print("Has Been Modified In Callback: "); Serial.println(_has_been_modified_in_callback ? "true" : "false");
+      Serial.print("Has Been Appended But Not Sended: "); Serial.println(_has_been_appended_but_not_sended ? "true" : "false");
+      Serial.print("Last Updated Millis: "); Serial.println(_last_updated_millis);
+      Serial.print("Update Interval Millis: "); Serial.println(_update_interval_millis);
+      Serial.print("Last Local Change Timestamp: "); Serial.println(_last_local_change_timestamp);
+      Serial.print("Last Cloud Change Timestamp: "); Serial.println(_last_cloud_change_timestamp);
+      if (_map_data_list == nullptr) {
+        Serial.println("Map Data List: NULL");
+      } else {
+        Serial.print("Map Data List: 0x");
+        Serial.print((uint32_t)(_map_data_list), HEX);
+        Serial.println(" (stack pointer - cannot deference)");
+      }
+      Serial.print("Identifier: "); Serial.println(_identifier);
+      Serial.print("Attribute Identifier: "); Serial.println(_attributeIdentifier);
+      Serial.print("Light Payload: "); Serial.println(_lightPayload ? "true" : "false");
+      Serial.print("Update Requested: "); Serial.println(_update_requested ? "true" : "false");
+      Serial.print("Encode Timestamp: "); Serial.println(_encode_timestamp ? "true" : "false");
+      Serial.print("Echo Requested: "); Serial.println(_echo_requested ? "true" : "false");
+      Serial.print("Timestamp: "); Serial.println(_timestamp);
+    }
 
     virtual bool isDifferentFromCloud() = 0;
     virtual void fromCloudToLocal() = 0;

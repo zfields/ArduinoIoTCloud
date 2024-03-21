@@ -72,6 +72,7 @@ CborError CBOREncoder::encode(PropertyContainer & property_container, uint8_t * 
 
 CBOREncoder::EncoderState CBOREncoder::handle_InitPropertyEncoder(PropertyContainerEncoder & propertyEncoder)
 {
+  DEBUG_VERBOSE("CBOREncoder::%s", __FUNCTION__);
   propertyEncoder.encoded_property_count = 0;
   propertyEncoder.checked_property_count = 0;
   propertyEncoder.encoded_property_limit = 0;
@@ -81,6 +82,7 @@ CBOREncoder::EncoderState CBOREncoder::handle_InitPropertyEncoder(PropertyContai
 
 CBOREncoder::EncoderState CBOREncoder::handle_OpenCBORContainer(PropertyContainerEncoder & propertyEncoder, uint8_t * data, size_t const size)
 {
+  DEBUG_VERBOSE("CBOREncoder::%s", __FUNCTION__);
   propertyEncoder.encoded_property_count = 0;
   propertyEncoder.checked_property_count = 0;
   cbor_encoder_init(&propertyEncoder.encoder, data, size, 0);
@@ -90,6 +92,7 @@ CBOREncoder::EncoderState CBOREncoder::handle_OpenCBORContainer(PropertyContaine
 
 CBOREncoder::EncoderState CBOREncoder::handle_TryAppend(PropertyContainerEncoder & propertyEncoder, bool  & lightPayload)
 {
+  DEBUG_VERBOSE("CBOREncoder::%s", __FUNCTION__);
   /* Check if backing storage and cloud has diverged. Time interval may be elapsed or property may be changed
    * and if that's the case encode the property into the CBOR.
    */
@@ -100,6 +103,9 @@ CBOREncoder::EncoderState CBOREncoder::handle_TryAppend(PropertyContainerEncoder
   for(; iter != propertyEncoder.property_container.end(); iter++)
   {
     Property * p = * iter;
+    if (p->name() == "thing_id") {
+      p->dump();
+    }
 
     if (p->shouldBeUpdated() && p->isReadableByCloud())
     {
@@ -129,6 +135,7 @@ CBOREncoder::EncoderState CBOREncoder::handle_TryAppend(PropertyContainerEncoder
 
 CBOREncoder::EncoderState CBOREncoder::handle_OutOfMemory(PropertyContainerEncoder & propertyEncoder)
 {
+  DEBUG_VERBOSE("CBOREncoder::%s", __FUNCTION__);
   if(propertyEncoder.encoded_property_count > 0)
     return EncoderState::CloseCBORContainer;
   else
@@ -137,6 +144,7 @@ CBOREncoder::EncoderState CBOREncoder::handle_OutOfMemory(PropertyContainerEncod
 
 CBOREncoder::EncoderState CBOREncoder::handle_SkipProperty(PropertyContainerEncoder & propertyEncoder)
 {
+  DEBUG_VERBOSE("CBOREncoder::%s", __FUNCTION__);
   /* Better to skip this property otherwise we will stay blocked here. This happens only with a message property 
    * that doesn't fit into the CBOR buffer
    */
@@ -148,6 +156,7 @@ CBOREncoder::EncoderState CBOREncoder::handle_SkipProperty(PropertyContainerEnco
 
 CBOREncoder::EncoderState CBOREncoder::handle_TrimAppend(PropertyContainerEncoder & propertyEncoder)
 {
+  DEBUG_VERBOSE("CBOREncoder::%s", __FUNCTION__);
   /* Trim the number of properties to be included in the next message to avoid multivalue property split */
   propertyEncoder.encoded_property_limit = propertyEncoder.encoded_property_count;
   propertyEncoder.property_limit_active = true;
@@ -159,6 +168,7 @@ CBOREncoder::EncoderState CBOREncoder::handle_TrimAppend(PropertyContainerEncode
 
 CBOREncoder::EncoderState CBOREncoder::handle_CloseCBORContainer(PropertyContainerEncoder & propertyEncoder)
 {
+  DEBUG_VERBOSE("CBOREncoder::%s", __FUNCTION__);
   CborError error = cbor_encoder_close_container(&propertyEncoder.encoder, &propertyEncoder.arrayEncoder);
   if (CborNoError != error)
     return EncoderState::TrimClose;
@@ -168,6 +178,7 @@ CBOREncoder::EncoderState CBOREncoder::handle_CloseCBORContainer(PropertyContain
 
 CBOREncoder::EncoderState CBOREncoder::handle_TrimClose(PropertyContainerEncoder & propertyEncoder)
 {
+  DEBUG_VERBOSE("CBOREncoder::%s", __FUNCTION__);
   /* Trim the number of properties to be included in the next message to avoid error closing container */
   propertyEncoder.encoded_property_limit = propertyEncoder.encoded_property_count - 1;
   propertyEncoder.property_limit_active = true;
@@ -179,6 +190,7 @@ CBOREncoder::EncoderState CBOREncoder::handle_TrimClose(PropertyContainerEncoder
 
 CBOREncoder::EncoderState CBOREncoder::handle_FinishAppend(PropertyContainerEncoder & propertyEncoder)
 {
+  DEBUG_VERBOSE("CBOREncoder::%s", __FUNCTION__);
   /* Restore property message limit to CBOR_ENCODER_NO_PROPERTIES_LIMIT */
   propertyEncoder.property_limit_active = false;
 
@@ -194,6 +206,9 @@ CBOREncoder::EncoderState CBOREncoder::handle_FinishAppend(PropertyContainerEnco
       break;
 
     p->appendCompleted();
+    if (p->name() == "thing_id") {
+      p->dump();
+    }
     num_appended_properties++;
   }
 

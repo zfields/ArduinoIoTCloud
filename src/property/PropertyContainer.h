@@ -111,4 +111,6 @@ void requestUpdateForAllProperties(PropertyContainer & prop_cont);
 void updateProperty(PropertyContainer & prop_cont, String propertyName, unsigned long cloudChangeEventTime, bool const is_sync_message, std::list<CborMapData> * map_data_list);
 String getPropertyNameByIdentifier(PropertyContainer & prop_cont, int propertyIdentifier);
 
+extern bool enablePropertyDebug;
+
 #endif /* ARDUINO_PROPERTY_CONTAINER_H_ */

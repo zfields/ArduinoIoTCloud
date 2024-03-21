@@ -40,6 +40,30 @@ void CBORDecoder::decode(PropertyContainer & property_container, uint8_t const *
   String current_property_name; /* Current property name during decoding: use to look for a new property in the senml value array */
   unsigned long current_property_base_time{0}, current_property_time{0};
 
+  // Serial.print("|<>| ");
+  // Serial.print(__FUNCTION__);
+  // Serial.println(" map_data_list parameter:");
+  // for (
+  //   std::list<CborMapData>::const_iterator it = map_data_list.begin();
+  //   it != map_data_list.end();
+  //   ++it
+  // ) {
+  //   if (it->base_version.isSet()) { Serial.print("Base version: "); Serial.println(it->base_version.get()); }
+  //   if (it->base_name.isSet()) { Serial.print("Base name: "); Serial.println(it->base_name.get()); }
+  //   if (it->base_time.isSet()) { Serial.print("Base time: "); Serial.println(it->base_time.get()); }
+  //   if (it->name.isSet()) { Serial.print("Name: "); Serial.println(it->name.get()); }
+  //   if (it->name_identifier.isSet()) { Serial.print("Name identifier: "); Serial.println(it->name_identifier.get() ? "true" : "false"); }
+  //   if (it->light_payload.isSet()) { Serial.print("Light payload: "); Serial.println(it->light_payload.get()); }
+  //   if (it->attribute_name.isSet()) { Serial.print("Attribute name: "); Serial.println(it->attribute_name.get()); }
+  //   if (it->attribute_identifier.isSet()) { Serial.print("Attribute identifier: "); Serial.println(it->attribute_identifier.get()); }
+  //   if (it->property_identifier.isSet()) { Serial.print("Property identifier: "); Serial.println(it->property_identifier.get()); }
+  //   if (it->val.isSet()) { Serial.print("Value: "); Serial.println(it->val.get()); }
+  //   if (it->str_val.isSet()) { Serial.print("String value: "); Serial.println(it->str_val.get()); }
+  //   if (it->bool_val.isSet()) { Serial.print("Boolean value: "); Serial.println(it->bool_val.get() ? "true" : "false"); }
+  //   if (it->time.isSet()) { Serial.print("Time: "); Serial.println(it->time.get()); }
+  //   Serial.println();
+  // }
+
   if (cbor_parser_init(payload, length, 0, &parser, &array_iter) != CborNoError)
     return;
 
@@ -80,6 +104,7 @@ void CBORDecoder::decode(PropertyContainer & property_container, uint8_t const *
  ******************************************************************************/
 
 CBORDecoder::MapParserState CBORDecoder::handle_EnterMap(CborValue * map_iter, CborValue * value_iter) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   if (cbor_value_get_type(map_iter) == CborMapType) {
@@ -92,6 +117,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_EnterMap(CborValue * map_iter, C
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_MapKey(CborValue * value_iter) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   if (cbor_value_at_end(value_iter)) {
@@ -131,6 +157,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_MapKey(CborValue * value_iter) {
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_UndefinedKey(CborValue * value_iter) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   if (cbor_value_advance(value_iter) == CborNoError) {
@@ -141,6 +168,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_UndefinedKey(CborValue * value_i
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_BaseVersion(CborValue * value_iter, CborMapData & map_data) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   if (cbor_value_is_integer(value_iter)) {
@@ -158,6 +186,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_BaseVersion(CborValue * value_it
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_BaseName(CborValue * value_iter, CborMapData & map_data) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   if (cbor_value_is_text_string(value_iter)) {
@@ -174,6 +203,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_BaseName(CborValue * value_iter,
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_BaseTime(CborValue * value_iter, CborMapData & map_data) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   double val = 0.0;
@@ -189,6 +219,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_BaseTime(CborValue * value_iter,
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_Name(CborValue * value_iter, CborMapData & map_data, PropertyContainer & property_container) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   if (cbor_value_is_text_string(value_iter)) {
@@ -231,6 +262,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_Name(CborValue * value_iter, Cbo
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_Value(CborValue * value_iter, CborMapData & map_data) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   double val = 0.0;
@@ -246,6 +278,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_Value(CborValue * value_iter, Cb
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_StringValue(CborValue * value_iter, CborMapData & map_data) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   if (cbor_value_is_text_string(value_iter)) {
@@ -262,6 +295,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_StringValue(CborValue * value_it
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_BooleanValue(CborValue * value_iter, CborMapData & map_data) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   bool val = false;
@@ -277,6 +311,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_BooleanValue(CborValue * value_i
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_Time(CborValue * value_iter, CborMapData & map_data) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
   MapParserState next_state = MapParserState::Error;
 
   double val = 0.0;
@@ -292,7 +327,34 @@ CBORDecoder::MapParserState CBORDecoder::handle_Time(CborValue * value_iter, Cbo
 }
 
 CBORDecoder::MapParserState CBORDecoder::handle_LeaveMap(CborValue * map_iter, CborValue * value_iter, CborMapData & map_data, PropertyContainer & property_container, String & current_property_name, unsigned long & current_property_base_time, unsigned long & current_property_time, bool const is_sync_message, std::list<CborMapData> & map_data_list) {
+  DEBUG_VERBOSE("CBORDecoder::%s", __FUNCTION__);
+  enablePropertyDebug = true;
   MapParserState next_state = MapParserState::Error;
+
+  // Serial.print("|<>| ");
+  // Serial.print(__FUNCTION__);
+  // Serial.println(" map_data_list parameter:");
+  // for (
+  //   std::list<CborMapData>::const_iterator it = map_data_list.begin();
+  //   it != map_data_list.end();
+  //   ++it
+  // ) {
+  //   if (it->base_version.isSet()) { Serial.print("Base version: "); Serial.println(it->base_version.get()); }
+  //   if (it->base_name.isSet()) { Serial.print("Base name: "); Serial.println(it->base_name.get()); }
+  //   if (it->base_time.isSet()) { Serial.print("Base time: "); Serial.println(it->base_time.get()); }
+  //   if (it->name.isSet()) { Serial.print("Name: "); Serial.println(it->name.get()); }
+  //   if (it->name_identifier.isSet()) { Serial.print("Name identifier: "); Serial.println(it->name_identifier.get() ? "true" : "false"); }
+  //   if (it->light_payload.isSet()) { Serial.print("Light payload: "); Serial.println(it->light_payload.get()); }
+  //   if (it->attribute_name.isSet()) { Serial.print("Attribute name: "); Serial.println(it->attribute_name.get()); }
+  //   if (it->attribute_identifier.isSet()) { Serial.print("Attribute identifier: "); Serial.println(it->attribute_identifier.get()); }
+  //   if (it->property_identifier.isSet()) { Serial.print("Property identifier: "); Serial.println(it->property_identifier.get()); }
+  //   if (it->val.isSet()) { Serial.print("Value: "); Serial.println(it->val.get()); }
+  //   if (it->str_val.isSet()) { Serial.print("String value: "); Serial.println(it->str_val.get()); }
+  //   if (it->bool_val.isSet()) { Serial.print("Boolean value: "); Serial.println(it->bool_val.get() ? "true" : "false"); }
+  //   if (it->time.isSet()) { Serial.print("Time: "); Serial.println(it->time.get()); }
+  //   Serial.println();
+  // }
+
   if (map_data.name.isSet()) {
     String propertyName;
     int colonPos = map_data.name.get().indexOf(":");
@@ -334,6 +396,7 @@ CBORDecoder::MapParserState CBORDecoder::handle_LeaveMap(CborValue * map_iter, C
     }
   }
 
+  enablePropertyDebug = false;
   return next_state;
 }
 
