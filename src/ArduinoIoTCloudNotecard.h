@@ -25,6 +25,18 @@
 #include "ArduinoIoTCloud.h"
 
 /******************************************************************************
+ * DEFINES
+ ******************************************************************************/
+
+#define USE_LIGHT_PAYLOADS (false)
+
+/******************************************************************************
+ * TYPEDEF
+ ******************************************************************************/
+
+typedef bool (*onOTARequestCallbackFunc)(void);
+
+/******************************************************************************
  * CLASS DECLARATION
  ******************************************************************************/
 
@@ -47,21 +59,41 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
     {
       ConnectPhy,
       SyncTime,
+      SendDeviceProperties,
+      SubscribeDeviceTopic,
+      WaitDeviceConfig,
       Connected,
     };
 
     uint32_t _last_poll_ms;
-    State _state;
+    unsigned long _next_device_subscribe_attempt_tick;
+    unsigned int _last_device_subscribe_cnt;
     int _interrupt_pin;
+    State _state;
     volatile bool _data_available;
+
+    // OTA member variables
+    bool _ota_cap;
+    int _ota_error;
+    String _ota_img_sha256;
+    String _ota_url;
+    bool _ota_req;
+    bool _ask_user_before_executing_ota;
+    onOTARequestCallbackFunc _get_ota_confirmation;
 
     State handle_ConnectPhy();
     State handle_SyncTime();
+    State handle_SendDeviceProperties();
+    State handle_SubscribeDeviceTopic();
+    State handle_WaitDeviceConfig();
     State handle_Connected();
 
     bool available (void);
+    void checkOTARequest();
     void decodePropertiesFromCloud();
-    void sendPropertiesToCloud();
+    void sendDevicePropertiesToCloud();
+    void sendDevicePropertyToCloud(String const name);
+    void sendThingPropertiesToCloud();
 
     friend void ISR_dataAvailable (void);
 };
