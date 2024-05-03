@@ -53,6 +53,11 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
 
     int begin(ConnectionHandler &connection, int interrupt_pin = -1);
 
+#ifdef BOARD_HAS_SECRET_KEY
+    inline void setBoardId        (String const & device_id) { setDeviceId(device_id); }
+    inline void setSecretDeviceKey(String const & secret_device_key)  { _secret_device_key = secret_device_key; }
+#endif
+
   private:
 
     enum class State
@@ -71,6 +76,10 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
     int _interrupt_pin;
     State _state;
     volatile bool _data_available;
+
+#ifdef BOARD_HAS_SECRET_KEY
+    String _secret_device_key;
+#endif
 
     // OTA member variables
     bool _ota_cap;
