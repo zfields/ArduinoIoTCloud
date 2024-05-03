@@ -74,6 +74,9 @@ ArduinoIoTCloudNotecard::ArduinoIoTCloudNotecard()
   _interrupt_pin{-1},
   _state{State::ConnectPhy},
   _data_available{false},
+#if defined(BOARD_HAS_SECRET_KEY)
+  _secret_device_key{""},
+#endif
   _ota_cap{false},
   //OTA: _ota_error{static_cast<int>(OTAError::None)},
   _ota_error{0},
@@ -159,7 +162,10 @@ void ArduinoIoTCloudNotecard::printDebugInfo()
 
   // Fetch the unique device identifier from the Notecard Connection Handler
   NotecardConnectionHandler *notecard_connection = reinterpret_cast<NotecardConnectionHandler *>(_connection);
-  setDeviceId(notecard_connection->getArduinoDeviceId());
+  String device_id(getDeviceId());
+  if (device_id == "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" || device_id.length() == 0) {
+    setDeviceId(notecard_connection->getArduinoDeviceId());
+  }
   String arduino_thing_id = getThingId();
 
   // Print the debug information
@@ -201,6 +207,30 @@ ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_SendDevicePropert
     DEBUG_ERROR("ArduinoIoTCloudNotecard::%s connection to Notehub lost", __FUNCTION__);
     return State::ConnectPhy;
   }
+
+#if defined(BOARD_HAS_SECRET_KEY)
+  // Provide device ID to Notehub
+  String device_id = getDeviceId();
+  if (J *req = NoteNewRequest("hub.set"))
+  {
+    JAddStringToObject(req, "sn", device_id.c_str());
+    NoteRequest(req);
+  }
+  if (device_id.length() > 0) {
+    DEBUG_VERBOSE("Reporting device ID to Cloud: %s", device_id.c_str());
+  }
+
+  // Confirm `_secret_device_key` is not the default from the examples
+  if (_secret_device_key != "my-device-password") {
+    // Provide `SECRET_DEVICE_KEY` to Notehub
+    if (J *req = NoteNewRequest("env.set"))
+    {
+      JAddStringToObject(req, "name", "arduino_iot_cloud_secret_key");
+      JAddStringToObject(req, "text", _secret_device_key.c_str());
+      NoteRequest(req);
+    }
+  }
+#endif
 
   sendDevicePropertiesToCloud();
   return State::SubscribeDeviceTopic;
@@ -257,7 +287,7 @@ ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_WaitDeviceConfig(
   {
     {
       DEBUG_WARNING("ArduinoIoTCloudNotecard::%s timed out waiting for valid thing_id", __FUNCTION__);
-      return State::SubscribeDeviceTopic;
+      return State::SendDeviceProperties;
     }
   }
 
@@ -269,6 +299,10 @@ ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_Connected()
   if (!connected())
   {
     DEBUG_ERROR("ArduinoIoTCloudNotecard::%s connection to Notehub lost", __FUNCTION__);
+    return State::ConnectPhy;
+  }
+  if (getThingIdOutdatedFlag() && !getThingId().length()) {
+    DEBUG_INFO("Disconnected from Arduino IoT Cloud");
     return State::ConnectPhy;
   }
 
