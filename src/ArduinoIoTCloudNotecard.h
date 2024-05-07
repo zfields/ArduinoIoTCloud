@@ -71,8 +71,9 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
     };
 
     uint32_t _last_poll_ms;
-    unsigned long _next_device_subscribe_attempt_tick;
-    unsigned int _last_device_subscribe_cnt;
+    uint32_t _last_device_subscribe_attempt_tick;
+    uint32_t _subscribe_retry_delay;
+    size_t _last_device_subscribe_cnt;
     int _interrupt_pin;
     State _state;
     volatile bool _data_available;
@@ -98,11 +99,12 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
     State handle_Connected();
 
     bool available (void);
-    void checkOTARequest();
-    void decodePropertiesFromCloud();
-    void sendDevicePropertiesToCloud();
+    void checkOTARequest(void);
+    void decodePropertiesFromCloud(void);
+    void requestThingIdFromNotehub(void);
+    void sendDevicePropertiesToCloud(void);
     void sendDevicePropertyToCloud(String const name);
-    void sendThingPropertiesToCloud();
+    void sendThingPropertiesToCloud(void);
 
     friend void ISR_dataAvailable (void);
 };
