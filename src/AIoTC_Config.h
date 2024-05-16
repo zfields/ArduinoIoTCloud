@@ -116,10 +116,6 @@
   #define HAS_TCP
 #endif
 
-#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION) || defined(ARDUINO_OPTA) || defined(ARDUINO_GIGA)
-  #define BOARD_STM32H7
-#endif
-
 #if defined(ARDUINO_EDGE_CONTROL)
   #define BOARD_HAS_SECRET_KEY
   #define HAS_TCP
@@ -136,6 +132,10 @@
 #endif
 
 #endif // USE_NOTECARD
+
+#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION) || defined(ARDUINO_OPTA) || defined(ARDUINO_GIGA)
+  #define BOARD_STM32H7
+#endif
 
 /******************************************************************************
  * CONSTANTS

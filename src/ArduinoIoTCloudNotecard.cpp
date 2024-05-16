@@ -120,7 +120,7 @@ int ArduinoIoTCloudNotecard::begin(ConnectionHandler &connection, int interrupt_
   addPropertyToContainer(_device_property_container, *p, "LIB_VERSION", Permission::Read);
   p = new CloudWrapperBool(_ota_cap);
   addPropertyToContainer(_device_property_container, *p, "OTA_CAP", Permission::Read);
-  p = new CloudWrapperInt<int>(_ota_error);
+  p = new CloudWrapperInt(_ota_error);
   addPropertyToContainer(_device_property_container, *p, "OTA_ERROR", Permission::Read);
   p = new CloudWrapperString(_ota_img_sha256);
   addPropertyToContainer(_device_property_container, *p, "OTA_SHA256", Permission::Read);
@@ -168,7 +168,7 @@ void ArduinoIoTCloudNotecard::printDebugInfo()
     // Delay for NotecardConnectionHander initialization
     DEBUG_VERBOSE("Awaiting Notecard connection...");
     delay(CHECK_INTERVAL_TABLE[static_cast<unsigned int>(NetworkConnectionState::INIT)]);
-    NetworkConnectionState conn_state = _connection->check();
+    conn_state = _connection->check();
   }
 
   // Fetch the unique device identifier from the Notecard Connection Handler
