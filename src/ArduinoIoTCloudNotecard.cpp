@@ -238,7 +238,7 @@ ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_SendDevicePropert
   // Confirm `_secret_device_key` is not the default from the examples
   if (_secret_device_key != "my-device-password") {
     // Provide `SECRET_DEVICE_KEY` to Notehub
-    if (J *req = NoteNewRequest("env.set"))
+    if (J *req = NoteNewRequest("env.default"))
     {
       JAddStringToObject(req, "name", "arduino_iot_cloud_secret_key");
       JAddStringToObject(req, "text", _secret_device_key.c_str());
