@@ -15,11 +15,11 @@
    a commercial license, send an email to license@arduino.cc.
 */
 
-#ifdef ARDUINO_ARCH_ESP8266
-
 /**************************************************************************************
  * INCLUDE
  **************************************************************************************/
+
+#if defined(USE_NOTECARD) || defined(ARDUINO_ARCH_ESP8266)
 
 #include <Arduino.h>
 #include "RTCMillis.h"
@@ -59,4 +59,4 @@ unsigned long RTCMillis::get()
   return _last_rtc_update_value;
 }
 
-#endif /* ARDUINO_ARCH_ESP8266 */
+#endif /* USE_NOTECARD || ARDUINO_ARCH_ESP8266 */
