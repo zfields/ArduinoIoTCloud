@@ -2,7 +2,7 @@
   This sketch demonstrates how to use the cloud schedule variable type.
 
   IMPORTANT:
-  This sketch works with WiFi, GSM, NB and Ethernet enabled boards supported by Arduino IoT Cloud.
+  This sketch works with Notecard, WiFi, GSM, NB and Ethernet enabled boards supported by Arduino IoT Cloud.
 
 */
 

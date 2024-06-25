@@ -52,6 +52,8 @@
  * AUTOMATICALLY CONFIGURED DEFINES
  ******************************************************************************/
 
+#if !defined(USE_NOTECARD)
+
 #if defined(ARDUINO_SAMD_MKRWIFI1010) || defined(ARDUINO_SAMD_NANO_33_IOT)
   #define OTA_STORAGE_SNU         (1)
 #else
@@ -114,11 +116,6 @@
   #define HAS_TCP
 #endif
 
-#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION) || defined(ARDUINO_OPTA) || defined(ARDUINO_GIGA)
-  #define BEAR_SSL_CLIENT_IBUF_SIZE (16384 + 325) // Allows download from storage API
-  #define BOARD_STM32H7
-#endif
-
 #if defined(ARDUINO_NANO_RP2040_CONNECT)
   #define BEAR_SSL_CLIENT_IBUF_SIZE (16384 + 325) // Allows download from storage API
 #endif
@@ -136,6 +133,13 @@
 
 #if defined(BOARD_HAS_SOFTSE) || defined(BOARD_HAS_OFFLOADED_ECCX08) || defined(BOARD_HAS_ECCX08) || defined(BOARD_HAS_SE050)
   #define BOARD_HAS_SECURE_ELEMENT
+#endif
+
+#endif // USE_NOTECARD
+
+#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_NICLA_VISION) || defined(ARDUINO_OPTA) || defined(ARDUINO_GIGA)
+  #define BEAR_SSL_CLIENT_IBUF_SIZE (16384 + 325) // Allows download from storage API
+  #define BOARD_STM32H7
 #endif
 
 /******************************************************************************
