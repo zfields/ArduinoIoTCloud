@@ -131,30 +131,27 @@ void ArduinoIoTCloudNotecard::printDebugInfo()
   // Initiate the connection to the Notecard to enable
   // the discovery of unique hardware identifiers
   NetworkConnectionState conn_state = _connection->check();
+  NotecardConnectionHandler *notecard_connection = reinterpret_cast<NotecardConnectionHandler *>(_connection);
 
-  if (NetworkConnectionState::INIT == conn_state)
+  for (unsigned long const connect_begin_ms = millis(); NetworkConnectionState::INIT == conn_state && (millis() - connect_begin_ms <= 5000); )
   {
     // Delay for NotecardConnectionHander initialization
     DEBUG_VERBOSE("Awaiting Notecard connection...");
     delay(CHECK_INTERVAL_TABLE[static_cast<unsigned int>(NetworkConnectionState::INIT)]);
     conn_state = _connection->check();
   }
-
-  // Fetch the unique device identifier from the Notecard Connection Handler
-  NotecardConnectionHandler *notecard_connection = reinterpret_cast<NotecardConnectionHandler *>(_connection);
-  String device_id(getDeviceId());
-  if (device_id == "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" || device_id.length() == 0) {
-    setDeviceId(notecard_connection->getArduinoDeviceId());
+  if (NetworkConnectionState::INIT == conn_state)
+  {
+    DEBUG_WARNING("Timed out waiting for Notecard to initialize.");
   }
-  String arduino_thing_id = getThingId();
 
   // Print the debug information
   DEBUG_INFO("***** Arduino IoT Cloud Notecard - configuration info *****");
   DEBUG_INFO("Notecard UID: %s", notecard_connection->getNotecardUid().c_str());
-  DEBUG_INFO("Arduino Device ID: %s", getDeviceId().c_str());
+  DEBUG_INFO("Arduino Device ID: %s", resolveDeviceId().c_str());
   if (NetworkConnectionState::CONNECTED == conn_state)
   {
-    DEBUG_INFO("Arduino Thing ID: %s", arduino_thing_id.c_str());
+    DEBUG_INFO("Arduino Thing ID: %s", getThingId().c_str());
   }
   else
   {
@@ -229,15 +226,13 @@ ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_ConfigureNotehub(
     DEBUG_DEBUG("Reporting device ID to Cloud: %s", device_id.c_str());
   }
 
-  // Confirm `_secret_device_key` is not the default from the examples
-  if (_secret_device_key != "my-device-password") {
-    // Provide `SECRET_DEVICE_KEY` to Notehub
-    if (J *req = NoteNewRequest("env.default"))
-    {
-      JAddStringToObject(req, "name", "arduino_iot_cloud_secret_key");
-      JAddStringToObject(req, "text", _secret_device_key.c_str());
-      NoteRequest(req);
-    }
+  // Provide `SECRET_DEVICE_KEY` to Notehub
+  if (J *req = NoteNewRequest("var.set"))
+  {
+    JAddStringToObject(req, "name", "arduino_iot_cloud_secret_key");
+    JAddStringToObject(req, "text", _secret_device_key.c_str());
+    JAddBoolToObject(req, "sync", true);
+    NoteRequest(req);
   }
 #endif
 
@@ -535,6 +530,28 @@ void ArduinoIoTCloudNotecard::sendMessage(Message * msg)
       sendCommandMsgToCloud(msg);
       break;
   }
+}
+
+const String ArduinoIoTCloudNotecard::resolveDeviceId()
+{
+  // Prefer the device ID set in the firmware
+  const String device_id(getDeviceId());
+  DEBUG_DEBUG("Local Device ID: %s", device_id.c_str());
+
+  // If not set, fetch the device ID from the Notecard Connection Handler (cloud)
+  if (device_id == "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" || device_id.length() == 0) {
+    // Manage the case where the device ID is not available
+    NotecardConnectionHandler *notecard_connection = reinterpret_cast<NotecardConnectionHandler *>(_connection);
+    const String cloud_device_id = notecard_connection->getArduinoDeviceId();
+    if (cloud_device_id.length() > 0) {
+      DEBUG_DEBUG("Setting Device ID from cloud: %s", cloud_device_id.c_str());
+      setDeviceId(cloud_device_id);
+    } else {
+      DEBUG_DEBUG("Unable to pull Device ID from cloud.");
+    }
+  }
+
+  return getDeviceId();
 }
 
 void ArduinoIoTCloudNotecard::sendCommandMsgToCloud(Message * msg_)

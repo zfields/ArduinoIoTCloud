@@ -121,6 +121,7 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
     void processCommand(const uint8_t *buf, size_t len);
     void processMessage(const uint8_t *buf, size_t len);
     void requestThingIdFromNotehub(void);
+    const String resolveDeviceId(void);
     void sendMessage(Message * msg);
     void sendCommandMsgToCloud(Message * msg_);
     void sendThingPropertyContainerToCloud(void);
