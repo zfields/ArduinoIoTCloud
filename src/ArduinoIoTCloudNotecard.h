@@ -26,9 +26,6 @@
 #include "ArduinoIoTCloudThing.h"
 #include "ArduinoIoTCloudDevice.h"
 
-#include "cbor/MessageDecoder.h"
-#include "cbor/MessageEncoder.h"
-
 /******************************************************************************
  * DEFINES
  ******************************************************************************/
@@ -43,7 +40,9 @@
  * TYPEDEF
  ******************************************************************************/
 
-// typedef bool (*onOTARequestCallbackFunc)(void);
+#if OTA_ENABLED
+typedef bool (*onOTARequestCallbackFunc)(void);
+#endif /* OTA_ENABLED */
 
 /******************************************************************************
  * CLASS DECLARATION
@@ -75,16 +74,10 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
       ConnectPhy,
       SyncTime,
       ConfigureNotehub,
-      // SendDeviceProperties,
-      // SubscribeDeviceTopic,
-      // WaitDeviceConfig,
       Connected,
       Disconnect,
     };
 
-    // uint32_t _last_device_subscribe_attempt_tick;
-    // uint32_t _subscribe_retry_delay;
-    // size_t _last_device_subscribe_cnt;
     State _state;
     TimedAttempt _connection_attempt;
     MessageStream _message_stream;
@@ -114,9 +107,6 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
     State handle_ConnectPhy();
     State handle_SyncTime();
     State handle_ConfigureNotehub();
-    // State handle_SendDeviceProperties();
-    // State handle_SubscribeDeviceTopic();
-    // State handle_WaitDeviceConfig();
     State handle_Connected();
     State handle_Disconnect();
 
@@ -125,7 +115,6 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
 #if OTA_ENABLED
     void checkOTARequest(void);
 #endif /* OTA_ENABLED */
-    // void decodePropertiesFromCloud(void);
     void detachThing();
     void fetchIncomingBytes(uint8_t *buf, size_t &len);
     void pollNotecard(void);
@@ -133,8 +122,6 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
     void processMessage(const uint8_t *buf, size_t len);
     void requestThingIdFromNotehub(void);
     void sendMessage(Message * msg);
-    // void sendDevicePropertiesToCloud(void);
-    // void sendDevicePropertyToCloud(String const name);
     void sendCommandMsgToCloud(Message * msg_);
     void sendThingPropertyContainerToCloud(void);
 

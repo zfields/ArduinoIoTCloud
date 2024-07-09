@@ -23,12 +23,15 @@
 
 #if defined(USE_NOTECARD)
 
+#include "ArduinoIoTCloudNotecard.h"
+
 #include <algorithm>
 #include <functional>
 
-#include "ArduinoIoTCloudNotecard.h"
-#include "Arduino_NotecardConnectionHandler.h"
 #include "cbor/CBOREncoder.h"
+#include "cbor/MessageDecoder.h"
+#include "cbor/MessageEncoder.h"
+#include "Arduino_NotecardConnectionHandler.h"
 
 #if OTA_ENABLED
 #include "ota/OTA.h"
@@ -55,25 +58,12 @@ void ISR_dataAvailable(void)
   ArduinoCloud._data_available = true;
 }
 
-// void setThingIdOutdated()
-// {
-//   ArduinoCloud.setThingIdOutdatedFlag();
-// }
-
-// void updateTimezoneInfo()
-// {
-//   ArduinoCloud.updateInternalTimezoneInfo();
-// }
-
 /******************************************************************************
  * CTOR/DTOR
  ******************************************************************************/
 
 ArduinoIoTCloudNotecard::ArduinoIoTCloudNotecard()
 :
-  // _last_device_subscribe_attempt_tick{0},
-  // _subscribe_retry_delay{0},
-  // _last_device_subscribe_cnt{0},
   _state{State::ConnectPhy}
   ,_connection_attempt(0,0)
   ,_message_stream(std::bind(&ArduinoIoTCloudNotecard::sendMessage, this, std::placeholders::_1))
@@ -181,9 +171,6 @@ void ArduinoIoTCloudNotecard::update()
   case State::ConnectPhy:           next_state = handle_ConnectPhy();           break;
   case State::SyncTime:             next_state = handle_SyncTime();             break;
   case State::ConfigureNotehub:     next_state = handle_ConfigureNotehub();     break;
-  // case State::SendDeviceProperties: next_state = handle_SendDeviceProperties(); break;
-  // case State::SubscribeDeviceTopic: next_state = handle_SubscribeDeviceTopic(); break;
-  // case State::WaitDeviceConfig:     next_state = handle_WaitDeviceConfig();     break;
   case State::Connected:            next_state = handle_Connected();            break;
   case State::Disconnect:           next_state = handle_Disconnect();           break;
   }
@@ -202,10 +189,6 @@ void ArduinoIoTCloudNotecard::update()
 
 ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_ConnectPhy()
 {
-  // Set Thing ID to a known state before establishing a connection
-  // _thing_id = "";
-  // clrThingIdOutdatedFlag();
-
   if (_connection->check() == NetworkConnectionState::CONNECTED
   && (!_connection_attempt.isRetry() || (_connection_attempt.isRetry() && _connection_attempt.isExpired())))
     return State::SyncTime;
@@ -215,9 +198,6 @@ ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_ConnectPhy()
 
 ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_SyncTime()
 {
-  // DEBUG_DEBUG("ArduinoIoTCloudNotecard::%s internal clock configured to posix timestamp %d", __FUNCTION__, static_cast<unsigned long>(_time_service.getTime()));
-  // return State::handle_ConfigureNotehub;
-
   const uint32_t current_time = ArduinoCloud.getInternalTime();
   if (TimeServiceClass::isTimeValid(current_time))
   {
@@ -261,77 +241,8 @@ ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_ConfigureNotehub(
   }
 #endif
 
-  // sendDevicePropertiesToCloud();
   return State::Connected;
 }
-
-// ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_SubscribeDeviceTopic()
-// {
-//   if (!connected())
-//   {
-//     DEBUG_ERROR("ArduinoIoTCloudNotecard::%s connection to Notehub lost", __FUNCTION__);
-//     return State::ConnectPhy;
-//   }
-
-//   if (_last_device_subscribe_cnt > AIOT_CONFIG_LASTVALUES_SYNC_MAX_RETRY_CNT)
-//   {
-//     DEBUG_ERROR("ArduinoIoTCloudNotecard::%s failed to receive Thing ID", __FUNCTION__);
-//     _last_device_subscribe_cnt = 0;
-//     _last_device_subscribe_attempt_tick = 0;
-//     execCloudEventCallback(ArduinoIoTCloudEvent::DISCONNECT);
-//     return State::ConnectPhy;
-//   }
-
-//   /* No device configuration reply. Wait: 5s -> 10s -> 20s -> 40s */
-//   _subscribe_retry_delay = (1 << _last_device_subscribe_cnt) * AIOT_CONFIG_DEVICE_TOPIC_SUBSCRIBE_RETRY_DELAY_ms;
-//   _subscribe_retry_delay = std::min(_subscribe_retry_delay, static_cast<unsigned long>(AIOT_CONFIG_MAX_DEVICE_TOPIC_SUBSCRIBE_RETRY_DELAY_ms));
-//   _last_device_subscribe_attempt_tick = millis();
-//   _last_device_subscribe_cnt++;
-
-//   return State::WaitDeviceConfig;
-// }
-
-// ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_WaitDeviceConfig()
-// {
-//   if (!connected())
-//   {
-//     DEBUG_ERROR("ArduinoIoTCloudNotecard::%s connection to Notehub lost", __FUNCTION__);
-//     return State::ConnectPhy;
-//   }
-
-//   /* Decode available data. */
-//   if (available())
-//     decodePropertiesFromCloud();
-
-//   /* Check if a Thing ID has been returned from the Arduino IoT Cloud. */
-//   if (getThingIdOutdatedFlag())
-//   {
-//     // clrThingIdOutdatedFlag();
-//     const String thing_id = getThingId();
-//     if (thing_id.length() > 0)
-//     {
-//       DEBUG_INFO("Connected to Arduino IoT Cloud");
-//       DEBUG_INFO("Thing ID: %s", thing_id.c_str());
-//       return State::Connected;
-//     } else {
-//       DEBUG_WARNING("ArduinoIoTCloudNotecard::%s received an empty Thing ID", __FUNCTION__);
-//       requestThingIdFromNotehub();
-//       return State::SubscribeDeviceTopic;
-//     }
-//   }
-
-//   /* Configuration not received or device not attached to a valid thing. */
-//   if ((millis() - _last_device_subscribe_attempt_tick) > _subscribe_retry_delay)
-//   {
-//     {
-//       DEBUG_WARNING("ArduinoIoTCloudNotecard::%s timed out waiting for valid Thing ID", __FUNCTION__);
-//       requestThingIdFromNotehub();
-//       return State::SubscribeDeviceTopic;
-//     }
-//   }
-
-//   return State::WaitDeviceConfig;
-// }
 
 ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_Connected()
 {
@@ -340,15 +251,9 @@ ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_Connected()
     return State::Disconnect;
   }
 
-  /* Check if a primitive property wrapper is locally changed. */
-  // updateTimestampOnLocallyChangedProperties(_thing_property_container);
-
   //TODO: Understand how available applies to the _device.update() and _thing.update()
   /* Poll Notecard for new messages */
   pollNotecard();
-
-  // /* If properties need updating sent them to the cloud. */
-  // sendThingPropertiesToCloud();
 
   /* Call CloudDevice process to get configuration */
   _device.update();
@@ -447,14 +352,14 @@ void ArduinoIoTCloudNotecard::checkOTARequest(void) {
     bool const perform_ota_now = ota_execution_allowed_by_user || !_ask_user_before_executing_ota;
     if (perform_ota_now) {
       /* Clear the error flag. */
-      //OTA: _ota_error = static_cast<int>(OTAError::None);
+      _ota_error = static_cast<int>(OTAError::None);
       _ota_error = 0;
       /* Clear the request flag. */
       _ota_req = false;
       /* Transmit the cleared request flags to the cloud. */
       sendDevicePropertyToCloud("OTA_REQ");
       /* Call member function to handle OTA request. */
-      //OTA: _ota_error = OTA::onRequest(_ota_url, _connection->getInterface());
+      _ota_error = OTA::onRequest(_ota_url, _connection->getInterface());
       DEBUG_WARNING("OTA request received. OTA is not currently supported by Notecard.");
       /* If something fails send the OTA error to the cloud */
       sendDevicePropertyToCloud("OTA_ERROR");
@@ -590,17 +495,23 @@ void ArduinoIoTCloudNotecard::processMessage(const uint8_t *buf, size_t len)
   NotecardConnectionHandler *notecard_connection = reinterpret_cast<NotecardConnectionHandler *>(_connection);
   switch (notecard_connection->getTopicType()) {
     // Commands
-    case NotecardConnectionHandler::TopicType::Device:
-    case NotecardConnectionHandler::TopicType::Notehub:
+    case NotecardConnectionHandler::TopicType::Command:
       processCommand(buf, len);
       break;
     // Telemetry
-    case NotecardConnectionHandler::TopicType::Shadow:
     case NotecardConnectionHandler::TopicType::Thing:
       CBORDecoder::decode(_thing.getPropertyContainer(), buf, len);
       break;
+    // Notehub Diagnostic
+    case NotecardConnectionHandler::TopicType::Notehub:
+      {
+        char *diag_msg = reinterpret_cast<char *>(const_cast<uint8_t *>(buf));
+        diag_msg[len - 1] = '\0';  // Ensure null-termination
+        DEBUG_WARNING("Notehub diagnostic message: %s", diag_msg);
+      }
+      break;
     default:
-      DEBUG_WARNING("Unable to decode unknown topic type");
+      DEBUG_WARNING("Unable to decode unknown topic type: 0x%2X", notecard_connection->getTopicType());
       break;
   }
 }
@@ -626,65 +537,6 @@ void ArduinoIoTCloudNotecard::sendMessage(Message * msg)
   }
 }
 
-// void ArduinoIoTCloudNotecard::sendDevicePropertiesToCloud(void)
-// {
-//   int bytes_encoded = 0;
-//   uint8_t data[CBOR_NOTE_MSG_MAX_SIZE];
-//   PropertyContainer ro_device_property_container;
-//   unsigned int last_device_property_index = 0;
-//   NotecardConnectionHandler *notecard_connection = reinterpret_cast<NotecardConnectionHandler *>(_connection);
-
-//   // Iterate over the list of read-only device properties
-//   std::list<String> ro_device_property_list;  // {"LIB_VERSION", "OTA_CAP", "OTA_ERROR", "OTA_SHA256"};
-//   ro_device_property_list.push_back("LIB_VERSION");
-//   ro_device_property_list.push_back("OTA_CAP");
-//   ro_device_property_list.push_back("OTA_ERROR");
-//   ro_device_property_list.push_back("OTA_SHA256");
-
-//   for (
-//     std::list<String>::iterator it = ro_device_property_list.begin();
-//     it != ro_device_property_list.end();
-//     ++it
-//   ) {
-//     Property* p = getProperty(this->_device_property_container, *it);
-//     if(p != nullptr) {
-//       addPropertyToContainer(ro_device_property_container, *p, p->name(), p->isWriteableByCloud() ? Permission::ReadWrite : Permission::Read);
-//     }
-//   }
-
-//   if (CBOREncoder::encode(ro_device_property_container, data, sizeof(data), bytes_encoded, last_device_property_index, USE_LIGHT_PAYLOADS) == CborNoError) {
-//     if (bytes_encoded > 0) {
-//       notecard_connection->setTopicType(NotecardConnectionHandler::TopicType::Device);
-//       notecard_connection->write(data, bytes_encoded);
-//     }
-//   } else {
-//     DEBUG_ERROR("Failed to encode Device properties");
-//   }
-// }
-
-// void ArduinoIoTCloudNotecard::sendDevicePropertyToCloud(String const name_)
-// {
-//   int bytes_encoded = 0;
-//   uint8_t data[CBOR_NOTE_MSG_MAX_SIZE];
-//   PropertyContainer temp_device_property_container;
-//   unsigned int last_device_property_index = 0;
-//   NotecardConnectionHandler *notecard_connection = reinterpret_cast<NotecardConnectionHandler *>(_connection);
-
-//   Property* p = getProperty(this->_device_property_container, name_);
-//   if(p != nullptr)
-//   {
-//     addPropertyToContainer(temp_device_property_container, *p, p->name(), p->isWriteableByCloud() ? Permission::ReadWrite : Permission::Read);
-//     if (CBOREncoder::encode(temp_device_property_container, data, sizeof(data), bytes_encoded, last_device_property_index, USE_LIGHT_PAYLOADS) == CborNoError) {
-//       if (bytes_encoded > 0) {
-//         notecard_connection->setTopicType(NotecardConnectionHandler::TopicType::Device);
-//         notecard_connection->write(data, bytes_encoded);
-//       }
-//     } else {
-//       DEBUG_ERROR("Failed to encode Device property: %s", name_.c_str());
-//     }
-//   }
-// }
-
 void ArduinoIoTCloudNotecard::sendCommandMsgToCloud(Message * msg_)
 {
   size_t bytes_encoded = CBOR_NOTE_MSG_MAX_SIZE;
@@ -694,7 +546,7 @@ void ArduinoIoTCloudNotecard::sendCommandMsgToCloud(Message * msg_)
 
   if (encoder.encode(msg_, data, bytes_encoded) == Encoder::Status::Complete) {
     if (bytes_encoded > 0) {
-      notecard_connection->setTopicType(NotecardConnectionHandler::TopicType::Device);
+      notecard_connection->setTopicType(NotecardConnectionHandler::TopicType::Command);
       notecard_connection->write(data, bytes_encoded);
     }
     DEBUG_DEBUG("Encoded %d bytes for Command Message", bytes_encoded);
