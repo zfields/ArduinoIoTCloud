@@ -51,7 +51,6 @@ typedef bool (*onOTARequestCallbackFunc)(void);
 class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
 {
   public:
-
              ArduinoIoTCloudNotecard();
     virtual ~ArduinoIoTCloudNotecard() { }
 
@@ -63,7 +62,7 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
     int begin(ConnectionHandler &connection, int interrupt_pin = -1);
 
 #ifdef BOARD_HAS_SECRET_KEY
-    inline void setBoardId        (String const & device_id) { setDeviceId(device_id); }
+    inline void setBoardId        (String const & device_id) { (_connection && (NetworkConnectionState::INIT != _connection->check())) ? setDeviceId(reinterpret_cast<NotecardConnectionHandler *>(_connection)->syncArduinoDeviceId(device_id)) : setDeviceId(device_id); }
     inline void setSecretDeviceKey(String const & secret_device_key)  { _secret_device_key = secret_device_key; }
 #endif
 
@@ -121,7 +120,6 @@ class ArduinoIoTCloudNotecard : public ArduinoIoTCloudClass
     void processCommand(const uint8_t *buf, size_t len);
     void processMessage(const uint8_t *buf, size_t len);
     void requestThingIdFromNotehub(void);
-    const String resolveDeviceId(void);
     void sendMessage(Message * msg);
     void sendCommandMsgToCloud(Message * msg_);
     void sendThingPropertyContainerToCloud(void);
