@@ -257,14 +257,10 @@ ArduinoIoTCloudNotecard::State ArduinoIoTCloudNotecard::handle_Disconnect()
     DEBUG_ERROR("ArduinoIoTCloudNotecard::%s connection to Notehub lost", __FUNCTION__);
   }
 
-  // Reset the Thing property container
+  // Reset the Thing and Device property containers
   Message message = { ResetCmdId };
   _thing.handleMessage(&message);
-  _thing.update();
-
-  // Reset the Device property container
   _device.handleMessage(&message);
-  _device.update();
 
   DEBUG_INFO("Disconnected from Arduino IoT Cloud");
 

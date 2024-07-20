@@ -12,7 +12,9 @@
 #endif
 
 #if defined(USE_NOTECARD)
-  /* The Notecard can provide connectivity to almost any board via ESLOV (I2C) or UART.
+  /* The Notecard can provide connectivity to almost any board via ESLOV (I2C)
+   * or UART. An empty string (or the default value provided below) will not
+   * override the Notecard's existing configuration.
    * Learn more at: https://dev.blues.io */
   #define NOTECARD_PRODUCT_UID "com.domain.you:product"
 #endif
